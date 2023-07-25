@@ -4,6 +4,11 @@ import { FaHome } from "react-icons/fa";
 
 export default function Header() {
   const navigate = useNavigate();
+  // onClick 이벤트 핸들러를 추가하여 클릭 시 "Main" 페이지로 이동하도록 설정
+  const handleHomeClick = () => {
+    navigate("/");
+  };
+
   return (
     <header
       style={{
@@ -16,9 +21,10 @@ export default function Header() {
     >
       <h1
         style={{
-          color: "gray",
+          color: "pink",
           cursor: "pointer",
         }}
+        onClick={handleHomeClick}
       >
         <FaHome />
       </h1>
