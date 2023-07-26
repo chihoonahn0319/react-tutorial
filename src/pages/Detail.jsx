@@ -13,12 +13,19 @@ export default function Detail({ todos, setTodos }) {
   const post = todos.find((post) => post.id === parseInt(id));
 
   // 삭제 버튼 클릭 시 실행되는 함수
-  const handleDeleteClick = () => {
-    // 선택한 게시물을 목록에서 제거하기 위해 새로운 게시물 목록을 생성
-    const updatedtodos = todos.filter((p) => p.id !== post.id);
-    // 게시물 목록을 업데이트하고 목록 페이지로 이동 (유저 편의 난솔직히 해주기싫음 유저가 불편했으면..)
-    setTodos(updatedtodos);
-    navigate("/");
+  const handleDeleteClick = (postId) => {
+    // 확인 알림 창 띄우기
+    const confirmDelete = window.confirm(
+      "기억은 머리 속에서 살지만 추억은 가슴 속에서 산다. 정말로 삭제하시겠습니까?"
+    );
+
+    if (confirmDelete) {
+      // 선택한 게시물을 목록에서 제거하기 위해 새로운 게시물 목록을 생성
+      const updatedtodos = todos.filter((p) => p.id !== post.id);
+      // 게시물 목록을 업데이트하고 목록 페이지로 이동 (유저 편의 난솔직히 해주기싫음 유저가 불편했으면 좋겠따..)
+      setTodos(updatedtodos);
+      navigate("/");
+    }
   };
 
   return (

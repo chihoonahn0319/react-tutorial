@@ -16,9 +16,17 @@ export default function Main({ todos, setTodos }) {
   };
 
   const handleDeleteClick = (postId) => {
-    const updatedtodos = todos.filter((post) => post.id !== postId);
-    setTodos(updatedtodos); // 삭제 버튼 클릭 시 해당 게시물을 목록에서 제거하고 게시물 목록 페이지로 이동
-    navigate("/");
+    // 확인 알림 창 띄우기
+    const confirmDelete = window.confirm(
+      "기억은 머리 속에서 살지만 추억은 가슴 속에서 산다. 정말로 삭제하시겠습니까?"
+    );
+
+    if (confirmDelete) {
+      // 삭제 진행
+      const updatedtodos = todos.filter((post) => post.id !== postId);
+      setTodos(updatedtodos);
+      navigate("/");
+    }
   };
 
   return (
