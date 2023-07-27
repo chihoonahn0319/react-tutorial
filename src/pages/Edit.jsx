@@ -2,20 +2,26 @@ import React, { Fragment } from "react";
 import Header from "../common/Header";
 import Container from "../common/Container";
 import { useState } from "react";
+import { useSelector, useDispatch } from "react-redux"; //useSelector, useDispatch import 하기 치훈아 이제좀 기억하자..
 import { useNavigate } from "react-router-dom";
 import { useParams } from "react-router-dom";
 import styled from "styled-components";
+import { updatePost } from "../index"; // updatePost를 index.js에서 불러옴
 
-export default function Edit({ todos, setTodos }) {
+export default function Edit() {
+  const dispatch = useDispatch();
   const navigate = useNavigate();
 
   // URL 파라미터로부터 게시물 ID를 가져온당께
   const { id } = useParams();
-
-  const postId = parseInt(id);
   // 해당 ID를 가진 게시물을 찾아보장
+  const postId = parseInt(id);
+
+  // 리덕스 스토어의 '게시글' 상태를 조회
+  const todos = useSelector((state) => state.게시글);
   const post = todos.find((post) => post.id === postId);
 
+  //초기값 설정 파블로스 뭉뭉이마냥 본능적으로 "" 넣었다가 한참 고민해서 해결~!
   const [title, setTitle] = useState(post.title);
   const [content, setContent] = useState(post.content);
 
@@ -27,10 +33,7 @@ export default function Edit({ todos, setTodos }) {
     const updatedPost = { ...post, title, content };
 
     // 기존의 게시물 목록을 업데이트된 게시물로 교체
-    const updatedtodos = todos.map((p) => (p.id === post.id ? updatedPost : p));
-
-    // 게시물 목록을 업데이트한 후, 게시물 목록 페이지로 이동
-    setTodos(updatedtodos);
+    dispatch(updatePost(updatedPost));
 
     navigate("/");
   };

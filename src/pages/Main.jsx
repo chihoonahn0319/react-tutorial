@@ -3,8 +3,14 @@ import { useNavigate } from "react-router-dom";
 import styled from "styled-components";
 import Header from "../common/Header";
 import Container from "../common/Container";
+import { useSelector, useDispatch } from "react-redux";
+import { deletePost } from "../index"; // index.js에서 deletePost 가져오기
 
-export default function Main({ todos, setTodos }) {
+export default function Main() {
+  // 리덕스 스토어의 '게시글' 상태를 조회
+  const todos = useSelector((state) => state.게시글);
+  const dispatch = useDispatch();
+
   const navigate = useNavigate();
 
   const handleEditClick = (postId) => {
@@ -23,8 +29,7 @@ export default function Main({ todos, setTodos }) {
 
     if (confirmDelete) {
       // 삭제 진행
-      const updatedtodos = todos.filter((post) => post.id !== postId);
-      setTodos(updatedtodos);
+      dispatch(deletePost(postId)); // deletePost 액션 생성자 함수를 호출하여 액션 디스패치
       navigate("/");
     }
   };

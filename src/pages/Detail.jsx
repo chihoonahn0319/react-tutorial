@@ -2,28 +2,33 @@ import React from "react";
 import Header from "../common/Header";
 import Container from "../common/Container";
 import { useParams } from "react-router-dom";
+import { useDispatch, useSelector } from "react-redux"; // useDispatch와 useSelector를 react-redux에서 가져옴
 import { useNavigate } from "react-router-dom";
 import styled from "styled-components";
+import { updatePost, deletePost } from "../index"; // updatePost를 index.js에서 불러옴
 
-export default function Detail({ todos, setTodos }) {
-  const { id } = useParams();
+export default function Detail() {
+  const dispatch = useDispatch();
   const navigate = useNavigate();
 
-  // URL 파라미터로부터 게시물 ID를 가져와서 해당 게시물을 찾아보장
-  const post = todos.find((post) => post.id === parseInt(id));
+  // URL 파라미터로부터 게시물 ID를 가져옴
+  const { id } = useParams();
+  // 해당 ID를 가진 게시물을 찾아옴
+  const postId = parseInt(id);
+  // 리덕스 스토어의 '게시글' 상태를 조회
+  const todos = useSelector((state) => state.게시글);
+  const post = todos.find((post) => post.id === postId);
 
   // 삭제 버튼 클릭 시 실행되는 함수
-  const handleDeleteClick = (postId) => {
+  const handleDeleteClick = () => {
     // 확인 알림 창 띄우기
     const confirmDelete = window.confirm(
       "기억은 머리 속에서 살지만 추억은 가슴 속에서 산다. 정말로 삭제하시겠습니까?"
     );
 
     if (confirmDelete) {
-      // 선택한 게시물을 목록에서 제거하기 위해 새로운 게시물 목록을 생성
-      const updatedtodos = todos.filter((p) => p.id !== post.id);
-      // 게시물 목록을 업데이트하고 목록 페이지로 이동 (유저 편의 난솔직히 해주기싫음 유저가 불편했으면 좋겠따..)
-      setTodos(updatedtodos);
+      // 삭제 진행
+      dispatch(deletePost(postId)); // deletePost 액션 생성자 함수를 호출하여 액션 디스패치
       navigate("/");
     }
   };
