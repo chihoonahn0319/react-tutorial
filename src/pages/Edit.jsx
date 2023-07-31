@@ -1,38 +1,36 @@
-import React, { Fragment } from "react";
+import React, { Fragment, useState } from "react"; // useState를 여기서 불러옴
 import Header from "../common/Header";
 import Container from "../common/Container";
-import { useState } from "react";
-import { useSelector, useDispatch } from "react-redux"; //useSelector, useDispatch import 하기 치훈아 이제좀 기억하자..
-import { useNavigate } from "react-router-dom";
-import { useParams } from "react-router-dom";
+import { useSelector, useDispatch } from "react-redux";
+import { useNavigate, useParams, Link } from "react-router-dom";
 import styled from "styled-components";
-import { updatePost } from "../index"; // updatePost를 index.js에서 불러옴
+import { updatePost } from "../redux/slice/postSlice";
 
 export default function Edit() {
   const dispatch = useDispatch();
   const navigate = useNavigate();
 
-  // URL 파라미터로부터 게시물 ID를 가져온당께
   const { id } = useParams();
-  // 해당 ID를 가진 게시물을 찾아보장
-  const postId = parseInt(id);
 
-  // 리덕스 스토어의 '게시글' 상태를 조회
   const todos = useSelector((state) => state.게시글);
-  const post = todos.find((post) => post.id === postId);
+  const post = todos.find((post) => post.id === id);
 
-  //초기값 설정 파블로스 뭉뭉이마냥 본능적으로 "" 넣었다가 한참 고민해서 해결~!
-  const [title, setTitle] = useState(post.title);
-  const [content, setContent] = useState(post.content);
+  const [title, setTitle] = useState(post ? post.title : "");
+  const [content, setContent] = useState(post ? post.content : "");
 
-  // 수정 버튼을 클릭하면 실행되는 함수
+  if (post.length === 0) {
+    return (
+      <>
+        <div>없는 페이지입니다.</div>
+        <Link to="/">홈으로 이동</Link>
+      </>
+    );
+  }
+
   const handleEditSubmit = (e) => {
     e.preventDefault();
 
-    // 수정된 게시물 객체를 생성
     const updatedPost = { ...post, title, content };
-
-    // 기존의 게시물 목록을 업데이트된 게시물로 교체
     dispatch(updatePost(updatedPost));
 
     navigate("/");

@@ -5,7 +5,6 @@ import Create from "./pages/Create";
 import Edit from "./pages/Edit";
 import Signup from "./pages/Signup";
 import Login from "./pages/Login";
-import { useSelector } from "react-redux";
 
 export default function App() {
   return (
