@@ -1,25 +1,41 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import Header from "../common/Header";
 import Container from "../common/Container";
 import styled from "styled-components";
-import { useDispatch } from "react-redux"; // useDispatch를 react-redux에서 가져옴
-import { addPost } from "../redux/slice/postSlice"; // addPost를 index.js에서 불러옴
+import { useDispatch } from "react-redux";
+import { addPost } from "../redux/slice/postSlice";
 import { nanoid } from "nanoid";
+import { auth } from "../firebase"; // Firebase 모듈에서 auth 객체를 가져옵니다. 젤중요 좀 그만 까먹어라
 
 export default function Create() {
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
+  const [user, setUser] = useState(null); // 로그인한 사용자 정보를 상태로 관리
 
-  // '추가' 버튼 클릭 시 새로운 게시물을 생성하고 목록 페이지로 이동한당(이거도 유저편의 ..난 해주기 불편..)
+  useEffect(() => {
+    // 로그인 상태 감지
+    const unsubscribe = auth.onAuthStateChanged((user) => {
+      if (user) {
+        setUser(user); // 사용자 정보 설정
+      } else {
+        setUser(null); // 로그아웃 시 사용자 정보 초기화
+      }
+    });
+
+    // 컴포넌트 언마운트 시에 이벤트 리스너 구독 해제
+    return () => unsubscribe();
+  }, []);
+
+  // '추가' 버튼 클릭 시 새로운 게시물을 생성하고 목록 페이지로 이동
   const handleAddClick = () => {
     const newPost = {
-      id: nanoid(), // 새로운 게시물의 ID를 현재 시간으로 생성(검색해보니까 그렇게하라는데 굳이..?)(예지님 피드백을 들어보니 굳이가아니였네 고맙다 구글아)
+      id: nanoid(), // 새로운 게시물의 ID를 현재 시간으로 생성
       title: title,
       content: content,
-      author: "",
+      author: user.email, // 로그인한 사용자가 있을 경우 이메일을 저장하고, 없을 경우 빈 문자열
     };
 
     // addPost 액션을 디스패치하여 새로운 게시물을 추가
@@ -56,7 +72,6 @@ export default function Create() {
     </>
   );
 }
-
 // 스타일 컴포넌트 정의
 const Form = styled.form`
   height: 600px;
