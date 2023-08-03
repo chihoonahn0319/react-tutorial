@@ -1,30 +1,15 @@
 import { createSlice } from "@reduxjs/toolkit";
-import { nanoid } from "nanoid";
 
-const initialState = [
-  {
-    id: nanoid(),
-    title: "안치훈은 진짜 바보입니다",
-    content: "나는 후니.",
-    author: "안치훈",
-  },
-  {
-    id: nanoid(),
-    title: "김말똥 멍청이입니다",
-    content: "나는 말똥.",
-    author: "김말똥",
-  },
-  {
-    id: nanoid(),
-    title: "김개똥은 바보입니다",
-    content: "나는 개똥.",
-    author: "김개똥",
-  },
-];
+// 데이터를 가져올 함수 작성
+const fetchPostsFromDb = async () => {
+  const response = await fetch("/db.json");
+  const data = await response.json();
+  return data.posts;
+};
 
 const products = createSlice({
   name: "게시글",
-  initialState,
+  initialState: [],
   reducers: {
     addPost: (state, action) => {
       state.push(action.payload);
@@ -40,5 +25,11 @@ const products = createSlice({
   },
 });
 
-export const { addPost, updatePost, deletePost } = products.actions;
+export const { addPost, updatePost, deletePost, setPosts } = products.actions;
 export default products.reducer;
+
+// 데이터 가져오는 액션 크리에이터 사용 예시
+export const fetchPosts = () => async (dispatch) => {
+  const posts = await fetchPostsFromDb();
+  dispatch(setPosts(posts));
+};

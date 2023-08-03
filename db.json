@@ -1,10 +1,22 @@
 {
-  "todos": [
+  "posts": [
     {
-      "id": 1,
-      "title": "제목예시",
-      "content": "Lorem ipsum dolor, sit amet consectetur adipisicing elit. Lorem ipsum dolor, sit amet consectetur adipisicing elit.Lorem ipsum dolor, sit amet consectetur adipisicing elit.Lorem ipsum dolor, sit amet consectetur adipisicing elit.",
-      "author": "abc@naver.com"
+      "id": "1",
+      "title": "안치훈은 진짜 바보입니다",
+      "content": "나는 후니입니다.",
+      "author": "안치훈"
+    },
+    {
+      "id": "2",
+      "title": "김말똥 멍청이입니다",
+      "content": "나는 말똥.",
+      "author": "김말똥"
+    },
+    {
+      "id": "3",
+      "title": "김개똥은 바보입니다",
+      "content": "나는 개똥.",
+      "author": "김개똥"
     }
   ]
 }

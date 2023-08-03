@@ -1,5 +1,5 @@
 // Login.js (Login 컴포넌트)
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import Header from "../common/Header";
 import Container from "../common/Container";
 import styled from "styled-components";
@@ -32,20 +32,6 @@ export default function Login() {
       alert("회원정보가 일치하지 않습니다.");
     }
   };
-
-  useEffect(() => {
-    // 로그인 상태 감지
-    const unsubscribe = auth.onAuthStateChanged((user) => {
-      if (user) {
-        console.log("현재 로그인한 사용자 정보:", user);
-      } else {
-        console.log("로그인되지 않은 상태입니다.");
-      }
-    });
-
-    // 컴포넌트 언마운트 시에 이벤트 리스너 구독 해제(정확히 이해는안감..)
-    return () => unsubscribe();
-  }, []);
 
   const handleSignupButtonClick = () => {
     navigate("/signup");

@@ -1,89 +1,80 @@
 import React, { useState, useEffect } from "react";
 import Header from "../common/Header";
 import Container from "../common/Container";
-import { useParams, Link } from "react-router-dom";
-import { useDispatch, useSelector } from "react-redux";
-import { useNavigate } from "react-router-dom";
+import { useParams, useNavigate, Link } from "react-router-dom";
 import styled from "styled-components";
-import { deletePost } from "../redux/slice/postSlice";
-
-import { auth } from "../firebase"; // Firebase 모듈에서 auth 객체
+import axios from "axios";
+import { useQuery, useMutation, useQueryClient } from "react-query";
+import { auth } from "../firebase";
 
 export default function Detail() {
-  const dispatch = useDispatch();
+  // useNavigate 훅을 이용하여 라우팅 함수 가져오기
   const navigate = useNavigate();
+  // useQueryClient 훅을 이용하여 queryClient 가져오기
+  const queryClient = useQueryClient();
 
-  // URL 파라미터로부터 게시물 ID를 가져옴
+  // useParams 훅을 이용하여 URL 파라미터 값 가져오기
   const { id } = useParams();
-  // 리덕스 스토어의 '게시글' 상태를 조회
-  const todos = useSelector((state) => state.게시글);
-  const post = todos.find((post) => post.id === id);
-  // 로그인 상태 감지
   const [user, setUser] = useState(null);
+
+  // 로그인된 사용자 추적을 위한 useEffect
   useEffect(() => {
+    // Firebase의 인증 상태 변경 구독 설정
     const unsubscribe = auth.onAuthStateChanged((user) => {
       if (user) {
-        setUser(user); // 로그인한 사용자 정보 설정
+        setUser(user); // 로그인된 사용자 정보 설정
       } else {
-        setUser(null); // 로그아웃 시 사용자 정보 초기화
+        setUser(null); // 로그인되지 않은 경우 사용자 정보 제거
       }
     });
 
-    // 컴포넌트 언마운트 시에 이벤트 리스너 구독 해제
+    // 컴포넌트 언마운트 시 인증 상태 변경 구독 해제
     return () => unsubscribe();
   }, []);
 
-  // 만약 게시물이 없을 경우, 404 페이지로 이동
-  if (!post) {
-    return (
-      <>
-        <div>없는 페이지입니다.</div>
-        <Link to="/">홈으로 이동</Link>
-      </>
-    );
-  }
+  // useQuery를 이용하여 게시물 데이터 가져오기
+  const { data: post, isLoading } = useQuery(["post", id], async () => {
+    const response = await axios.get(`http://localhost:3001/posts/${id}`);
+    return response.data;
+  });
 
-  const handleEditClick = () => {
-    // 로그인 여부 확인
-    if (user) {
-      // 게시물의 author와 로그인한 이메일이 일치하는지 확인
-      if (post.author === user.email) {
-        navigate(`/edit/${post.id}`); // 로그인한 사용자와 게시물의 작성자가 일치하면 수정 페이지로 이동
-      } else {
-        // 일치하지 않는 경우 경고창 띄우기
-        alert("어허~남의 것을 탐하지말지어다.");
-      }
-    } else {
-      // 로그인이 안된 경우 경고창 띄우기
-      alert("로그인 후에 게시물을 수정할 수 있습니다.");
-    }
-  };
+  // useMutation을 이용하여 게시물 삭제 처리 함수 생성
+  const deletePostMutation = useMutation(async () => {
+    const response = await axios.delete(`http://localhost:3001/posts/${id}`);
+    return response.data;
+  });
 
-  const handleDeleteClick = () => {
-    // 로그인 여부 확인
-    if (user) {
-      // 게시물의 author와 로그인한 이메일이 일치하는지 확인
-      if (post.author === user.email) {
-        // 확인 알림 창 띄우기
-        const confirmDelete = window.confirm(
-          "기억은 머리 속에서 살지만 추억은 가슴 속에서 산다. 정말로 삭제하시겠습니까?"
-        );
-
-        if (confirmDelete) {
-          // 삭제 진행
-          dispatch(deletePost(post.id));
-          navigate("/");
-        }
-      } else {
-        // 일치하지 않는 경우 경고창 띄우기
-        alert("어허~남의 것을 탐하지말지어다.");
-      }
-    } else {
-      // 로그인이 안된 경우 경고창 띄우기
+  // 게시물 삭제 처리 함수
+  const handleDeleteClick = async () => {
+    if (!user) {
       alert("로그인 후에 게시물을 삭제할 수 있습니다.");
+      return;
+    }
+
+    if (post.author !== user.email) {
+      alert("어허~남의 것을 탐하지말지어다.");
+      return;
+    }
+
+    const confirmDelete = window.confirm(
+      "기억은 머리 속에서 살지만 추억은 가슴 속에서 산다. 정말로 삭제하시겠습니까?"
+    );
+
+    if (confirmDelete) {
+      try {
+        await deletePostMutation.mutateAsync();
+        queryClient.invalidateQueries(["posts"]);
+        navigate("/"); // 홈으로 이동
+      } catch (error) {
+        console.error("게시물 삭제 중 오류 발생:", error);
+      }
     }
   };
 
+  // 데이터 로딩 중이면 로딩 메시지 표시
+  if (isLoading) return <p>Loading...</p>;
+
+  // 게시물 상세 페이지 렌더링
   return (
     <>
       <Header />
@@ -91,14 +82,23 @@ export default function Detail() {
         <Title>{post.title}</Title>
         <Content>{post.content}</Content>
         <ButtonContainer>
-          <EditButton onClick={handleEditClick}>수정</EditButton>
-          <DeleteButton onClick={handleDeleteClick}>삭제</DeleteButton>
+          {/* 로그인한 사용자가 게시물 작성자인 경우 수정 버튼 표시 */}
+          {user && post.author === user.email && (
+            <EditButton as={Link} to={`/edit/${id}`}>
+              수정
+            </EditButton>
+          )}
+          {/* 삭제 버튼 */}
+          <DeleteButton onClick={handleDeleteClick} disabled={isLoading}>
+            삭제
+          </DeleteButton>
         </ButtonContainer>
       </DetailContainer>
     </>
   );
 }
 
+// 스타일드 컴포넌트를 이용하여 스타일 정의
 const DetailContainer = styled(Container)`
   h1 {
     border: 1px solid lightgray;

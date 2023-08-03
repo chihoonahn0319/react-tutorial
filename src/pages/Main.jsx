@@ -1,95 +1,106 @@
-import React, { useState, useEffect } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import styled from "styled-components";
 import Header from "../common/Header";
 import Container from "../common/Container";
-import { useSelector, useDispatch } from "react-redux";
-import { deletePost } from "../redux/slice/postSlice"; // index.js에서 deletePost 가져오기
-import { auth } from "../firebase"; // Firebase 모듈에서 auth 객체를 가져온다
-export default function Main() {
-  // 리덕스 스토어의 '게시글' 상태를 조회
-  const todos = useSelector((state) => state.게시글);
-  const dispatch = useDispatch();
-  const navigate = useNavigate();
-  const [user, setUser] = useState(null); // 로그인한 사용자 정보를 상태로 관리
+import { useDispatch } from "react-redux";
+import { useQuery, useQueryClient } from "react-query"; // react-query의 useQuery와 useMutation 임포트
+import { deletePost } from "../redux/slice/postSlice"; // 삭제 액션 임포트
+import { auth } from "../firebase";
+import axios from "axios"; // axios 임포트
 
-  // 로그인 상태 감지
-  useEffect(() => {
+export default function Main() {
+  const navigate = useNavigate();
+  const [user, setUser] = useState(null);
+  const queryClient = useQueryClient(); // queryClient 생성
+
+  // useQuery를 사용하여 데이터 가져오기 가져오기 get 사용
+  const { data: todos, isLoading } = useQuery("posts", async () => {
+    const response = await axios.get("http://localhost:3001/posts"); // 서버에서 게시물 데이터 가져오기
+    return response.data; // 가져온 데이터 반환
+  });
+
+  const dispatch = useDispatch();
+
+  React.useEffect(() => {
     const unsubscribe = auth.onAuthStateChanged((user) => {
       if (user) {
-        setUser(user); // 로그인한 사용자 정보 설정
+        setUser(user);
       } else {
-        setUser(null); // 로그아웃 시 사용자 정보 초기화
+        setUser(null);
       }
     });
-
-    // 컴포넌트 언마운트 시에 이벤트 리스너 구독 해제
     return () => unsubscribe();
   }, []);
 
+  // 게시물 수정 버튼 클릭 시 처리 함수
   const handleEditClick = (post) => {
-    // 로그인 여부 확인
     if (user) {
-      // 게시물의 author와 로그인한 이메일이 일치하는지 확인
       if (post.author === user.email) {
-        navigate(`/edit/${post.id}`); // 로그인한 사용자와 게시물의 작성자가 일치하면 수정 페이지로 이동
+        navigate(`/edit/${post.id}`); // 작성자 본인인 경우 수정 페이지로 이동
       } else {
-        // 일치하지 않는 경우 경고창 띄우기
         alert("어허~남의 것을 탐하지말지어다.");
       }
     } else {
-      // 로그인이 안된 경우 경고창 띄우기
       alert("로그인 후에 게시물을 수정할 수 있습니다.");
     }
   };
 
+  // 게시물 추가 버튼 클릭 시 처리 함수
   const handleCreateClick = () => {
-    // 로그인 여부 확인
     if (user) {
-      navigate("/create"); // 로그인 상태인 경우 추가 페이지로 이동
+      navigate("/create"); // 로그인한 경우 추가 페이지로 이동
     } else {
-      // 로그인이 안된 경우 경고창 띄우기
       alert("로그인 후에 게시물을 추가할 수 있습니다.");
     }
   };
 
-  const handleDeleteClick = (postId) => {
-    // 로그인 여부 확인
-    if (user) {
-      // 게시물의 author와 로그인한 이메일이 일치하는지 확인
-      const post = todos.find((post) => post.id === postId);
-      if (post && post.author === user.email) {
-        // 확인 알림 창 띄우기
-        const confirmDelete = window.confirm(
-          "기억은 머리 속에서 살지만 추억은 가슴 속에서 산다. 정말로 삭제하시겠습니까?"
-        );
-
-        if (confirmDelete) {
-          // 삭제 진행
-          dispatch(deletePost(postId)); // deletePost 액션 생성자 함수를 호출하여 액션 디스패치
-          navigate("/");
-        }
-      } else {
-        // 일치하지 않는 경우 경고창 띄우기
-        alert("어허~남의 것을 탐하지말지어다.");
-      }
-    } else {
-      // 로그인이 안된 경우 경고창 띄우기
+  // 게시물 삭제 버튼 클릭 시 처리 함수
+  const handleDeleteClick = async (postId) => {
+    if (!user) {
       alert("로그인 후에 게시물을 삭제할 수 있습니다.");
+      return;
+    }
+
+    const post = todos.find((post) => post.id === postId);
+    if (!post || post.author !== user.email) {
+      alert("어허~남의 것을 탐하지말지어다.");
+      return;
+    }
+
+    const confirmDelete = window.confirm(
+      "기억은 머리 속에서 살지만 추억은 가슴 속에서 산다. 정말로 삭제하시겠습니까?"
+    );
+
+    if (confirmDelete) {
+      try {
+        await axios.delete(`http://localhost:3001/posts/${postId}`);
+        dispatch(deletePost(postId)); // Redux의 상태 삭제
+
+        // React Query 쿼리 갱신
+        queryClient.invalidateQueries("posts");
+
+        // 삭제 후 홈으로 이동
+        navigate("/");
+      } catch (error) {
+        console.error("Error deleting post:", error);
+        alert("게시물 삭제에 실패하였습니다.");
+      }
     }
   };
+
+  if (isLoading) return <p>Loading...</p>; // 데이터 로딩 중일 때 표시
 
   return (
     <>
       <Header />
       <Container>
-        <CreateButton onClick={handleCreateClick}>추가</CreateButton>{" "}
-        {/* '추가' 버튼 */}
+        <CreateButton onClick={handleCreateClick}>추가</CreateButton>
         {todos.map((post) => (
           <PostContainer key={post.id}>
             <PostContent
               onClick={() => {
-                navigate(`/detail/${post.id}`); // 게시물 클릭 시 해당 게시물의 상세 페이지로 이동
+                navigate(`/detail/${post.id}`); // 게시물 상세 페이지로 이동
               }}
             >
               <h2>{post.title}</h2> {/* 게시물 제목 */}
@@ -125,13 +136,13 @@ const Button = styled.button`
 
 const CreateButton = styled(Button)`
   background-color: pink;
-  margin: 0 auto; // 가운데 정렬을 위한 스타일
-  display: block; // inline 요소를 block 요소로 변경하여 가로폭을 조절
+  margin: 0 auto;
+  display: block;
 `;
 
 const EditButton = styled(Button)`
   background-color: pink;
-  margin-right: 6px; // '수정' 버튼과 '삭제' 버튼 사이의 간격을 조절하기 위한 스타일
+  margin-right: 6px;
 `;
 
 const DeleteButton = styled(Button)`

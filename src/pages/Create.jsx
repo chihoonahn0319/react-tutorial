@@ -4,51 +4,71 @@ import Header from "../common/Header";
 import Container from "../common/Container";
 import styled from "styled-components";
 import { useDispatch } from "react-redux";
-import { addPost } from "../redux/slice/postSlice";
+import { useMutation, useQueryClient } from "react-query"; // useMutation과 useQueryClient 임포트
+import { auth } from "../firebase";
+import axios from "axios"; // axios 임포트
 import { nanoid } from "nanoid";
-import { auth } from "../firebase"; // Firebase 모듈에서 auth 객체를 가져옵니다. 젤중요 좀 그만 까먹어라
+
+import { addPost } from "../redux/slice/postSlice";
 
 export default function Create() {
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
-  const [user, setUser] = useState(null); // 로그인한 사용자 정보를 상태로 관리
+  const [user, setUser] = useState(null);
 
+  //로그인 했는지 검사 이거 줄여야되는데 어렵당..
   useEffect(() => {
-    // 로그인 상태 감지
     const unsubscribe = auth.onAuthStateChanged((user) => {
       if (user) {
-        setUser(user); // 사용자 정보 설정
+        setUser(user);
       } else {
-        setUser(null); // 로그아웃 시 사용자 정보 초기화
+        setUser(null);
       }
     });
-
-    // 컴포넌트 언마운트 시에 이벤트 리스너 구독 해제
     return () => unsubscribe();
   }, []);
 
-  // '추가' 버튼 클릭 시 새로운 게시물을 생성하고 목록 페이지로 이동
-  const handleAddClick = () => {
+  // useQueryClient 훅을 컴포넌트 함수 외부에서 사용
+  const queryClient = useQueryClient();
+
+  // useMutation을 사용하여 데이터 추가 처리 넣어주기 post
+  const addPostMutation = useMutation(async (newPost) => {
+    const response = await axios.post("http://localhost:3001/posts", newPost);
+    return response.data;
+  });
+
+  const handleAddClick = async () => {
     const newPost = {
-      id: nanoid(), // 새로운 게시물의 ID를 현재 시간으로 생성
+      id: nanoid(),
       title: title,
       content: content,
-      author: user.email, // 로그인한 사용자가 있을 경우 이메일을 저장하고, 없을 경우 빈 문자열
+      author: user ? user.email : "",
     };
 
-    // addPost 액션을 디스패치하여 새로운 게시물을 추가
-    dispatch(addPost(newPost));
+    try {
+      const data = await addPostMutation.mutateAsync(newPost); // 데이터 추가 처리
+      dispatch(addPost(data));
 
-    navigate("/"); // 목록 페이지로 이동
+      // 목록 페이지 데이터 캐시 무효화 및 다시 가져오기
+      //React Query 라이브러리의 기능 중 하나로, 캐시된 데이터를 무효화하여
+      //다시 불러올 수 있게 해주는 메서드입니다.
+      //이 메서드를 사용하면 데이터를 업데이트하거나 삭제한 후에
+      //해당 데이터를 다시 가져올 수 있다
+      //사실 잘 이해안감 질문꼭하기 ★★★★★★★★★★★★★★★★★★★★★
+      queryClient.invalidateQueries("posts");
+
+      navigate("/");
+    } catch (error) {
+      console.error("Error adding post:", error);
+    }
   };
 
   return (
     <>
       <Header />
       <Container>
-        {/* 게시물 생성을 위한 폼 */}
         <Form
           onSubmit={(e) => {
             e.preventDefault();
@@ -72,7 +92,7 @@ export default function Create() {
     </>
   );
 }
-// 스타일 컴포넌트 정의
+
 const Form = styled.form`
   height: 600px;
   display: flex;
